@@ -75,9 +75,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     private String image;
 
     private boolean privileged;
-    
+
     private Long runAsUser;
-    
+
     private Long runAsGroup;
 
     private String supplementalGroups;
@@ -385,10 +385,14 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     static String sanitizeLabel(String input) {
         String label = input;
         int max = 63; // Kubernetes limit
+        // a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must 
+        // start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used 
+        // for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')
         if (label.length() > max) {
             label = label.substring(label.length() - max);
         }
-        label = label.replaceAll("[^_.a-zA-Z0-9-]", "_").replaceFirst("^[^a-zA-Z0-9]", "x");
+        label = label.replaceAll("[^_.a-zA-Z0-9-]", "_").replaceFirst("^[^a-zA-Z0-9]", "x").replaceFirst("[^a-zA-Z0-9]$", "x");
+
         return label;
     }
 
@@ -439,7 +443,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     public void setRunAsUser(String runAsUser) {
         this.runAsUser = PodTemplateUtils.parseLong(runAsUser);
     }
-    
+
     public String getRunAsUser() {
         return runAsUser == null ? null : runAsUser.toString();
     }
@@ -748,12 +752,12 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
             containerTemplate.setWorkingDir(remoteFs);
             containers.add(containerTemplate);
         }
-        
+
         if (podRetention == null) {
             // https://issues.jenkins-ci.org/browse/JENKINS-53260
-            // various legacy paths for injecting pod templates can 
+            // various legacy paths for injecting pod templates can
             // bypass the defaulting paths and the
-            // value can still be null, so check for it here so 
+            // value can still be null, so check for it here so
             // as to not blow up things like termination path
             podRetention = PodRetention.getPodTemplateDefault();
         }
